@@ -96,8 +96,18 @@ class Three_Test_Public {
 		 * class.
 		 */
 
-		wp_enqueue_script( $this->plugin_name, plugin_dir_url( __FILE__ ) . 'js/three-test-public.js', array( 'jquery' ), $this->version, false );
+		wp_register_script( 'threejs', 'https://cdnjs.cloudflare.com/ajax/libs/three.js/110/three.min.js' );
+		wp_enqueue_script( $this->plugin_name, plugin_dir_url( __FILE__ ) . 'js/three-test-public.js', array( 'jquery', 'threejs' ), $this->version, false );
 
+
+	}
+
+	public function reverse_text($content) {
+		// if (is_single()) {
+		return $content . '<canvas class="three-test"></canvas>';
+		// }
+
+		// return $content;
 	}
 
 }
