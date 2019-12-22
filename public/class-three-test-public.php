@@ -102,12 +102,8 @@ class Three_Test_Public {
 
 	}
 
-	public function reverse_text($content) {
-		// if (is_single()) {
+	public function add_three_container($content) {
 		return $content . '<canvas class="three-test"></canvas>';
-		// }
-
-		// return $content;
 	}
 
 }
