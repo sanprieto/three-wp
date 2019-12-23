@@ -157,6 +157,32 @@ class Three_Test {
 		$this->loader->add_action( 'admin_enqueue_scripts', $plugin_admin, 'enqueue_styles' );
 		$this->loader->add_action( 'admin_enqueue_scripts', $plugin_admin, 'enqueue_scripts' );
 
+		add_action('add_meta_boxes', function() {
+			add_meta_box(
+				'three_color',
+				'Three color',
+				function ($post) {
+					$color = get_post_meta($post->ID, '_three_color', true);
+					if (empty($color)){
+						$color = '#0000ff';
+					};
+
+					echo '<input type="color" name="three_color" value="' . $color . '">';
+				},
+				'post'
+			);
+		});
+
+		add_action('save_post', function ($post_id) {
+			if (array_key_exists('three_color', $_POST)) {
+				update_post_meta(
+					$post_id,
+					'_three_color',
+					$_POST['three_color']
+				);
+			}
+		});
+
 	}
 
 	/**
@@ -172,7 +198,7 @@ class Three_Test {
 
 		$this->loader->add_action( 'wp_enqueue_scripts', $plugin_public, 'enqueue_styles' );
 		$this->loader->add_action( 'wp_enqueue_scripts', $plugin_public, 'enqueue_scripts' );
-		$this->loader->add_filter( 'the_content', $plugin_public, 'add_three_container' );
+		$this->loader->add_action( 'the_post', $plugin_public, 'inspect_post' );
 
 	}
 

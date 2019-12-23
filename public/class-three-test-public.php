@@ -102,8 +102,17 @@ class Three_Test_Public {
 
 	}
 
-	public function add_three_container($content) {
-		return $content . '<canvas class="three-test"></canvas>';
+	public function inspect_post($post) {
+		if (is_admin()){
+			return;
+		}
+
+		$color = get_post_meta($post->ID, '_three_color', true);
+		if (empty($color)){
+			$color = 'blue';
+		};
+
+		$post->post_content .= '<canvas class="three-test" data-id="' . $post->ID . '" data-color="' . $color . '"></canvas>';
 	}
 
 }
