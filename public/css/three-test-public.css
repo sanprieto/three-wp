@@ -3,9 +3,10 @@
  * included in this file.
  */
 
- canvas.three-test {
- 	display: block;
+
+ #myContainer {
+
  	width: 100%;
- 	height: 100%;
- 	border: 1px black solid;
+ 	height: 350px;
+ 	display: block;
  }

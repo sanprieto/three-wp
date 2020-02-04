@@ -31,125 +31,302 @@
 
 })( jQuery );
 
-let radius = 8;
-let theta = 0;
-let line = [];
-let letters;
 let fullText = [];
-
-let letterSetting = {
-    curveSegments: 12,
-    steps: 10,
-    depth: .1,
-    bevelEnabled: false,
-    bevelThickness: .03,
-    bevelSize: .05,
-    bevelSegments: 6
-};
+let camera;
+let containers;
+let raycaster;
+let mouse;
+let plane;
+let geometryCopy;
+let scene;
+let texts;
+let cont = 0;
+let font;
+let img;
+let imgOne;
+let renderer;
+let myContainer;
 
 const xixote = () => {
 
-	console.log('dcl')
-	// function loadFont(callback) {
-	const loader = new THREE.FontLoader();
 
-	const containers = document.querySelectorAll( 'canvas.three-test' );
-	const material = new THREE.MeshPhongMaterial( {color: 0x6699ff} ); 
 
+	var manager = new THREE.LoadingManager();
+	manager.onLoad = function() { 
+
+	  init( font, containers, imgOne );
+
+	}
+	var loader = new THREE.FontLoader( manager );
 	loader.load(
-		// resource URL
 		'https://unpkg.com/three@0.112.1/examples/fonts/helvetiker_bold.typeface.json',
+		function ( resource ) {
 
-		// onLoad callback
-		function ( font ) {
-			// do something with the font
-			init( font, containers, material );
-			console.log('load font call init')
+			font = resource;
 		}
 	);
-	// }
-	// loadFont(init, containers, material)
+
+	var loader2 = new THREE.TextureLoader( manager );
+	loader2.load( 'https://sanprieto.es/WpThree/wp-content/plugins/three-wp-master/public/img/backLuuk.jpg', function ( texture ) {
+
+		imgOne = texture;
+	} );
 }
 
 if (['interactive', 'loaded', 'completed'].includes(document.readyState)) {
 	console.log('ready')
-	xixote()
-}
-else {
+	xixote();
+}else {
 	console.log('not ready')
 	document.addEventListener("DOMContentLoaded", () => {
 		console.log('yes ready')
-		xixote()
+		xixote();
 	})
 }
-
 console.log({xixote, rs: document.readyState})
+function init( font, container, imgOne ){ 
 
-function init( font, containers, material ){ 
+		container = document.querySelector( '#myContainer' );
 
-	Array.from( containers ).forEach( container => { 
+	//Array.from( containers ).forEach( container => { 
 
-		const scene = new THREE.Scene()
+		scene = new THREE.Scene()
+		scene.background = imgOne;
+		//scene.background = new THREE.Color(0x6699FF);
 		const color = container.dataset['color'] || 'green'
 		
-		const renderer = new THREE.WebGLRenderer({canvas: container, })
-	    renderer.setPixelRatio(window.devicePixelRatio)
-	    renderer.setSize(container.clientWidth, container.clientHeight)
+		renderer = new THREE.WebGLRenderer({ antialias: true , alpha: true } );
+	    renderer.setPixelRatio( window.devicePixelRatio )
+	    renderer.setSize( container.clientWidth, container.clientHeight )
+	    renderer.autoClearColor = true;
+	    container.appendChild( renderer.domElement );
 
 	    const ambientLight = new THREE.AmbientLight(color, 0.5)
 
-	    const camera = new THREE.PerspectiveCamera(70, container.clientWidth / container.clientHeight, 1, 1000)
-		camera.position.z = 8
+	    camera = new THREE.PerspectiveCamera( 75, container.clientWidth / container.clientHeight, 1, 1000)
+		camera.position.z = 100;
 
-	    const geometry = new THREE.BoxGeometry(2, 2, 2)
-	    const material = new THREE.MeshPhongMaterial()
-	    //const cube = new THREE.Mesh(geometry, material)
-	    const texts = createTextByLetters( scene, 'Click to show \nTime to interactive.' );
+	    const geometry = new THREE.PlaneGeometry( 1500, 1300 );
+	    const material = new THREE.MeshBasicMaterial( { color: 0xffff00, transparent: true, opacity: 0 } );
+	    plane = new THREE.Mesh( geometry, material );
+	    scene.add( plane );
+	    plane.receiveShadow = true;
+	    plane.position.z = -.7;
+	    scene.add( plane );
+
+	    texts = createParticlesLineText ( scene, 'CAMPAGNES MET HET OOG OP\n     DE MOBIELE REVOLUTIE', font);
+	    geometryCopy = new THREE.BufferGeometry();
+	    geometryCopy.copy( texts.geometry );
 
 	    const directionalLight = new THREE.DirectionalLight(0xffffff, 0.5)
-	    directionalLight.position.set(600, 200, 200)
+	    directionalLight.position.set( 600, 200, 200 )
 
-	    //scene.add(cube)
+	    raycaster = new THREE.Raycaster();
+	    mouse = new THREE.Vector2( 1000,1000 );
+
 	    scene.add(ambientLight)
 		scene.add(directionalLight)    
 
 	    const animate = () => {
-	    	renderer.render(scene, camera)
 
-	    	/*
-	    	cube.rotation.y+= 0.01;
-	    	cube.rotation.x+= 0.01;
-	    	cube.rotation.z+= 0.01;
-	    	*/
-	    	
-	    	texts.forEach( ( obj,i ) => {
+	    	console.log( 'eo')
 
-	    	  obj.rotation.y += 0.001 * i;
-	    	  obj.rotation.x += 0.001 * i;
+	    	const canvasAspect = container.clientWidth / container.clientHeight;
+	    	const imageAspect = imgOne.image ? imgOne.image.width / imgOne.image.height : 1;
+	    	const aspect = imageAspect / canvasAspect;
+	    	  
+	    	imgOne.offset.x = aspect > 1 ? (1 - 1 / aspect) / 2 : 0;
+	    	imgOne.repeat.x = aspect > 1 ? 1 / aspect : 1;
+	    	  
+	    	imgOne.offset.y = aspect > 1 ? 0 : (1 - aspect) / 2;
+	    	imgOne.repeat.y = aspect > 1 ? 1 : aspect;
 
-	    	} );
+	    	raycaster.setFromCamera( mouse, camera );
+
+	    	const intersects = raycaster.intersectObject( plane );
+
+	    	if ( intersects.length > 0 ) {
+
+	    	  const mx = intersects[ 0 ].point.x;
+	    	  const my = intersects[ 0 ].point.y;
+	    	  const mz = intersects[ 0 ].point.z;
+
+	    	  const pos = texts.geometry.attributes.position;
+	    	  const copy = geometryCopy.attributes.position;
+
+	    	  for ( var i = 0, l = pos.count; i < l; i++) {
+
+	    	    const initX = copy.getX(i);
+	    	    const initY = copy.getY(i);
+	    	    const initZ = copy.getZ(i);
+
+	    	    let px = pos.getX(i);
+	    	    let py = pos.getY(i);
+	    	    let pz = pos.getZ(i);
+
+	    	    const dx = mx - px;
+	    	    const dy = my - py;
+	    	    const dz = mz - pz;
+
+	    	    const mouseDistance = distance( mx, my, px, py )
+
+	    	    if( mouseDistance < 50 ){
+
+	    	      const ax = dx;
+	    	      const ay = dy;
+	    	      const az = dz;
+
+	    	      px -= ax/20;
+	    	      py -= ay/20;
+	    	      pz -= az/20;
+
+	    	      
+	    	      pos.setXYZ( i, px, py, pz );
+	    	      pos.needsUpdate = true;
 
 
-	    	theta += 0.1;
-	    	camera.position.x = radius * Math.sin( THREE.Math.degToRad( theta ) );
-	    	camera.position.y = radius * Math.sin( THREE.Math.degToRad( theta ) );
-	    	camera.position.z = radius * Math.cos( THREE.Math.degToRad( theta ) );
-	    	camera.lookAt( scene.position );
-	    	camera.updateMatrixWorld();
-	    	
-	    	
-	    	requestAnimationFrame(animate)
+	    	    }
+	    	    const dxo = px - initX;
+	    	    const dyo = py - initY;
+	    	    const dzo = pz - initZ;
+
+	    	    px -= dxo/25;
+	    	    py -= dyo/25;
+	    	    pz -= dzo/25;
+
+	    	    pos.setXYZ( i, px, py, pz );
+	    	    pos.needsUpdate = true;
+
+	    	  }
+	    	  
+	    	}
+
+	    	renderer.render( scene, camera )
+	    	requestAnimationFrame( animate )
 	    }
 
 	    renderer.render(scene, camera);
-	    //animate();
-	 //    window.onload = function() {
-	 //    	console.log('Event onload')
 
-		// };
+		
+		document.addEventListener( 'mousemove', onDocumentMouseMove );
+		document.getElementById( 'myContainer' ).addEventListener("click", createNewText, true); 
+		window.addEventListener( 'resize', onWindowResize );
 		animate();
-	    
-	})
+	//})
+
+	function onWindowResize(){ 
+
+	
+	    camera.aspect = container.clientWidth / container.clientHeight;
+	    camera.updateProjectionMatrix();
+	    renderer.setSize( container.clientWidth, container.clientHeight );
+
+	}
+
+	function onDocumentMouseMove( event ) {
+
+	  event.preventDefault();
+	  mouse.x = ( event.clientX / window.innerWidth ) * 2 - 1;
+	  mouse.y = - ( event.clientY / window.innerHeight ) * 2 + 1;
+
+	}
+	const distance = (x1, y1, x2, y2) => {
+	 
+	  return Math.sqrt(Math.pow((x1 - x2), 2) + Math.pow((y1 - y2), 2));
+	}
+	function createNewText( ){
+
+	  scene.remove(texts);
+	  texts.geometry.dispose();
+	  texts.material.dispose();
+	  texts = undefined;
+
+	  if( cont == 0 ){
+
+	  
+	    texts = createParticlesLineText ( scene, '  STIJGING IN UW \nANALYTICSDATA', font);
+	    geometryCopy.copy( texts.geometry );
+
+	    const pos = texts.geometry.attributes.position;
+
+	    for ( var i = 0, l = pos.count; i < l; i++) {
+
+	      pos.setXYZ( i, Math.random() * 200 - 100 , Math.random() * 200 - 100 , Math.random() * 200 - 100    );
+	      pos.needsUpdate = true;
+
+	    }
+
+	    cont++;
+
+	  }else{
+
+	    texts = createParticlesLineText ( scene,'CAMPAGNES MET HET OOG OP\n     DE MOBIELE REVOLUTIE', font);
+	    geometryCopy.copy( texts.geometry );
+
+	    const pos = texts.geometry.attributes.position;
+
+	    for ( var i = 0, l = pos.count; i < l; i++) {
+
+	      pos.setXYZ( i, Math.random() * 30 - 15 , Math.random() * 30 - 15 , Math.random() * 30 - 15  );
+	      pos.needsUpdate = true;
+
+	    }
+
+	    cont = 0;
+
+	  }
+	}
+
+	function createParticlesLineText( scene, contentText, font ){
+
+		var xMid;
+		let thePoints = [];
+
+			let shapes = font.generateShapes( contentText,15 );
+			let holeShapes = [];
+
+			for ( let q = 0; q < shapes.length; q ++ ) {
+
+				let shape = shapes[ q ];
+
+				if ( shape.holes && shape.holes.length > 0 ) {
+
+					for ( let  j = 0; j < shape.holes.length; j ++ ) {
+
+						let  hole = shape.holes[ j ];
+						holeShapes.push( hole );
+					}
+				}
+
+			}
+			shapes.push.apply( shapes, holeShapes );
+				
+			for ( let  x = 0; x < shapes.length; x ++ ) {
+
+				let shape = shapes[ x ];
+				let points = shape.getSpacedPoints( 200 ) ;
+
+				points.forEach( ( element ) => {
+					thePoints.push( element )
+				});
+
+			}
+
+			let geoParticles = new THREE.BufferGeometry().setFromPoints( thePoints );
+			geoParticles.computeBoundingBox();
+
+			xMid = - 0.5 * ( geoParticles.boundingBox.max.x - geoParticles.boundingBox.min.x );
+			geoParticles.translate( xMid, 0, 0 );
+
+			let PointMaterial = new THREE.PointsMaterial({ color: 0xffffff, size: 1.2, sizeAttenuation: false });
+
+			let particles = new THREE.Points( geoParticles, PointMaterial );
+			scene.add( particles );
+			
+
+		return particles;
+
+	}
 
 
 	function createTextByLetters( scene, contentText ){ 
@@ -192,10 +369,6 @@ function init( font, containers, material ){
 
 }
 
-// document.getElementById("beginMagic").addEventListener("click", () => {
-// 	let t= performance.now() 
-// 	alert( t/1000)
-// })
 
 
 

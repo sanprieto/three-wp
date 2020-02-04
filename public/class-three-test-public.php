@@ -106,21 +106,12 @@ class Three_Test_Public {
 
 			global $post;
 
-		 	if ($post->ID== 1871 ){
+		 	if (is_front_page() ){
 
-		 		    // Check if we're inside the main loop in a single post page.
-		 		    if ( is_front_page() && in_the_loop() && is_main_query() ) {
-		 		    	
-
-		 				if (empty($color)){
-		 					$color = '#6699FF';
-		 				};
-		 				echo '<canvas id="beginMagic" class="three-test" data-id="' . $post->ID . '" data-color="' . $color . '"></canvas>'.$content;
-		 		        //return $content.= '<canvas id="beginMagic" class="three-test" data-id="' . $post->ID . '" data-color="' . $color . '"></canvas>';
-
-		 		    }
-		 		 
-		 		    
+		 		if (empty($color)){
+		 			$color = '#6699FF';
+		 		};
+		 		echo '<div id="myContainer"></div>'.$content;
 
 		 	}else{
 				return $content;
