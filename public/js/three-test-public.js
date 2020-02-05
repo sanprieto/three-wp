@@ -46,10 +46,13 @@ let img;
 let imgOne;
 let renderer;
 let myContainer;
+let mouseX = 0 , mouseY = 0;
+let mobil = 3;
 
 const xixote = () => {
 
 
+	console.log( )
 
 	var manager = new THREE.LoadingManager();
 	manager.onLoad = function() { 
@@ -61,18 +64,18 @@ const xixote = () => {
 	loader.load(
 		'https://unpkg.com/three@0.112.1/examples/fonts/helvetiker_bold.typeface.json',
 		function ( resource ) {
-
 			font = resource;
 		}
 	);
 
 	var loader2 = new THREE.TextureLoader( manager );
 	loader2.load( 'https://sanprieto.es/WpThree/wp-content/plugins/three-wp-master/public/img/backLuuk.jpg', function ( texture ) {
-
 		imgOne = texture;
 	} );
 }
 
+
+/*
 if (['interactive', 'loaded', 'completed'].includes(document.readyState)) {
 	console.log('ready')
 	xixote();
@@ -83,10 +86,22 @@ if (['interactive', 'loaded', 'completed'].includes(document.readyState)) {
 		xixote();
 	})
 }
+*/
+
+
+document.onreadystatechange = function () {
+  if (document.readyState == "complete") {
+    xixote();
+  }
+}
+
+
 console.log({xixote, rs: document.readyState})
 function init( font, container, imgOne ){ 
 
+
 		container = document.querySelector( '#myContainer' );
+
 
 	//Array.from( containers ).forEach( container => { 
 
@@ -101,12 +116,16 @@ function init( font, container, imgOne ){
 	    renderer.autoClearColor = true;
 	    container.appendChild( renderer.domElement );
 
-	    const ambientLight = new THREE.AmbientLight(color, 0.5)
-
 	    camera = new THREE.PerspectiveCamera( 75, container.clientWidth / container.clientHeight, 1, 1000)
-		camera.position.z = 100;
+		camera.position.z = 5;
 
-	    const geometry = new THREE.PlaneGeometry( 1500, 1300 );
+		if( container.clientWidth < 400){
+
+			camera.position.z = 7;
+			mobil = 0;
+		}
+
+	    const geometry = new THREE.PlaneGeometry( 1000, 800 );
 	    const material = new THREE.MeshBasicMaterial( { color: 0xffff00, transparent: true, opacity: 0 } );
 	    plane = new THREE.Mesh( geometry, material );
 	    scene.add( plane );
@@ -114,32 +133,14 @@ function init( font, container, imgOne ){
 	    plane.position.z = -.7;
 	    scene.add( plane );
 
-	    texts = createParticlesLineText ( scene, 'CAMPAGNES MET HET OOG OP\n     DE MOBIELE REVOLUTIE', font);
+	    texts = createParticlesLineText ( scene, 'CAMPAGNES VOOR DE\n   MOBIELE REVOLUTIE', font);
 	    geometryCopy = new THREE.BufferGeometry();
 	    geometryCopy.copy( texts.geometry );
-
-	    const directionalLight = new THREE.DirectionalLight(0xffffff, 0.5)
-	    directionalLight.position.set( 600, 200, 200 )
 
 	    raycaster = new THREE.Raycaster();
 	    mouse = new THREE.Vector2( 1000,1000 );
 
-	    scene.add(ambientLight)
-		scene.add(directionalLight)    
-
 	    const animate = () => {
-
-	    	console.log( 'eo')
-
-	    	const canvasAspect = container.clientWidth / container.clientHeight;
-	    	const imageAspect = imgOne.image ? imgOne.image.width / imgOne.image.height : 1;
-	    	const aspect = imageAspect / canvasAspect;
-	    	  
-	    	imgOne.offset.x = aspect > 1 ? (1 - 1 / aspect) / 2 : 0;
-	    	imgOne.repeat.x = aspect > 1 ? 1 / aspect : 1;
-	    	  
-	    	imgOne.offset.y = aspect > 1 ? 0 : (1 - aspect) / 2;
-	    	imgOne.repeat.y = aspect > 1 ? 1 : aspect;
 
 	    	raycaster.setFromCamera( mouse, camera );
 
@@ -170,7 +171,7 @@ function init( font, container, imgOne ){
 
 	    	    const mouseDistance = distance( mx, my, px, py )
 
-	    	    if( mouseDistance < 50 ){
+	    	    if( mouseDistance < mobil ){
 
 	    	      const ax = dx;
 	    	      const ay = dy;
@@ -180,7 +181,6 @@ function init( font, container, imgOne ){
 	    	      py -= ay/20;
 	    	      pz -= az/20;
 
-	    	      
 	    	      pos.setXYZ( i, px, py, pz );
 	    	      pos.needsUpdate = true;
 
@@ -198,7 +198,6 @@ function init( font, container, imgOne ){
 	    	    pos.needsUpdate = true;
 
 	    	  }
-	    	  
 	    	}
 
 	    	renderer.render( scene, camera )
@@ -207,16 +206,25 @@ function init( font, container, imgOne ){
 
 	    renderer.render(scene, camera);
 
-		
 		document.addEventListener( 'mousemove', onDocumentMouseMove );
 		document.getElementById( 'myContainer' ).addEventListener("click", createNewText, true); 
 		window.addEventListener( 'resize', onWindowResize );
 		animate();
+		onWindowResize();
 	//})
 
 	function onWindowResize(){ 
 
-	
+		const canvasAspect = container.clientWidth / container.clientHeight;
+		const imageAspect = imgOne.image ? imgOne.image.width / imgOne.image.height : 1;
+		const aspect = imageAspect / canvasAspect;
+		  
+		imgOne.offset.x = aspect > 1 ? (1 - 1 / aspect) / 2 : 0;
+		imgOne.repeat.x = aspect > 1 ? 1 / aspect : 1;
+		  
+		imgOne.offset.y = aspect > 1 ? 0 : (1 - aspect) / 2;
+		imgOne.repeat.y = aspect > 1 ? 1 : aspect;
+
 	    camera.aspect = container.clientWidth / container.clientHeight;
 	    camera.updateProjectionMatrix();
 	    renderer.setSize( container.clientWidth, container.clientHeight );
@@ -230,6 +238,8 @@ function init( font, container, imgOne ){
 	  mouse.y = - ( event.clientY / window.innerHeight ) * 2 + 1;
 
 	}
+
+
 	const distance = (x1, y1, x2, y2) => {
 	 
 	  return Math.sqrt(Math.pow((x1 - x2), 2) + Math.pow((y1 - y2), 2));
@@ -260,7 +270,7 @@ function init( font, container, imgOne ){
 
 	  }else{
 
-	    texts = createParticlesLineText ( scene,'CAMPAGNES MET HET OOG OP\n     DE MOBIELE REVOLUTIE', font);
+	    texts = createParticlesLineText ( scene, 'CAMPAGNES VOOR DE\n   MOBIELE REVOLUTIE', font);
 	    geometryCopy.copy( texts.geometry );
 
 	    const pos = texts.geometry.attributes.position;
@@ -282,7 +292,7 @@ function init( font, container, imgOne ){
 		var xMid;
 		let thePoints = [];
 
-			let shapes = font.generateShapes( contentText,15 );
+			let shapes = font.generateShapes( contentText, 1 );
 			let holeShapes = [];
 
 			for ( let q = 0; q < shapes.length; q ++ ) {
@@ -304,7 +314,7 @@ function init( font, container, imgOne ){
 			for ( let  x = 0; x < shapes.length; x ++ ) {
 
 				let shape = shapes[ x ];
-				let points = shape.getSpacedPoints( 200 ) ;
+				let points = shape.getSpacedPoints( 100 ) ;
 
 				points.forEach( ( element ) => {
 					thePoints.push( element )
@@ -318,7 +328,7 @@ function init( font, container, imgOne ){
 			xMid = - 0.5 * ( geoParticles.boundingBox.max.x - geoParticles.boundingBox.min.x );
 			geoParticles.translate( xMid, 0, 0 );
 
-			let PointMaterial = new THREE.PointsMaterial({ color: 0xffffff, size: 1.2, sizeAttenuation: false });
+			let PointMaterial = new THREE.PointsMaterial({ color: 0xffffff, size: 1.7, sizeAttenuation: false });
 
 			let particles = new THREE.Points( geoParticles, PointMaterial );
 			scene.add( particles );
@@ -328,44 +338,6 @@ function init( font, container, imgOne ){
 
 	}
 
-
-	function createTextByLetters( scene, contentText ){ 
-
-		contentText = contentText.split('\n');
-
-		for( var i = 0; i < contentText.length ; i ++ ){ 
-
-			let shapes = font.generateShapes( contentText[i], 1 );
-
-			const geometry = new THREE.ShapeGeometry( shapes );
-			geometry.computeBoundingBox();
-
-			let xMid = - 0.5 * ( geometry.boundingBox.max.x - geometry.boundingBox.min.x );
-			//console.log( xMid )
-
-			for ( var u = 0; u < shapes.length; u ++ ) {
-
-			    const shape = shapes[ u ];
-			    const geometrus = new THREE.ExtrudeGeometry( shape, letterSetting );
-			    geometrus.translate( xMid, - ((i * 1) * 1.5) , 0 );
-			    letters = new THREE.Mesh( geometrus, material.clone() );
-			    
-			    let centrer = new THREE.Vector3();
-			    letters.geometry.computeBoundingBox();
-			    letters.geometry.boundingBox.getCenter( centrer );
-			    letters.geometry.center();
-			    letters.position.copy(centrer);
-			    letters.position.y = letters.position.y + 1;
-				
-			    scene.add( letters );
-			    fullText.push( letters );
-			}
-
-		}
-		//console.log( fullText );
-
-		return fullText;
-	}
 
 }
 
